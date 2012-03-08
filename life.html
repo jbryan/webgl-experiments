@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<title>Life</title>
-		<script src="prototype.js" type="text/javascript"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
 		<style>
 			body {
 				background-color: #000000;
@@ -75,6 +75,8 @@
 			uniform vec2 resolution;
 			uniform sampler2D backbuffer;
 			uniform float phase;
+			uniform bool mouse_down;
+			uniform vec2 mouse_coord;
 
 			void main(void)
 			{   
@@ -91,7 +93,10 @@
 				vec4 cellState = texture2D(backbuffer, coord);
 
 				for (int i = 0; i < 3; i++) {
-					if (cellState[i] > 0.5) {
+					if (distance((mouse_coord + 1.0) / 2.0, coord) < 0.001) {
+						gl_FragColor[i] = 1.0;
+					}
+					else if (cellState[i] > 0.5) {
 						//live
 						if (sumNeighbors[i] < 1.5)
 							gl_FragColor[i] = 0.0;
@@ -148,6 +153,7 @@
 			var height = 2048;
 			var zoom = 1.0;
 			var focus = [0,0,0];
+			var mouse_coord = [0,0];
 
 			function scaleViewport() {
 				canvas.width = window.innerWidth * quality;
@@ -184,23 +190,31 @@
 				return stats;
 			}
 
-			function wheelzoom(evt) {
+			function wheelzoom(jq_event) {
+				evt = jq_event.originalEvent;
 				zoom += zoom * evt.wheelDelta / 1000.0;
+				zoom = Math.max(1,zoom);
+				focusmouse(jq_event);
 			}
 			
-			function focusmouse(evt) {
-				focus[0] = - ( evt.clientX / window.innerWidth ) * 2 + 1;
-				focus[1] = ( evt.clientY / window.innerHeight ) * 2 - 1;
+			function focusmouse(jq_event) {
+				evt = jq_event.originalEvent;
+				mouse_coord[0] = ( evt.clientX / window.innerWidth ) * 2 - 1;
+				mouse_coord[1] = -( evt.clientY / window.innerHeight ) * 2 + 1;
+				focus[0] = -mouse_coord[0] * (zoom-1);
+				focus[1] = -mouse_coord[1] * (zoom-1);
 			}
 
 			function init() {
-				canvas = document.getElementById("canvas");
+				canvas = $("#canvas")[0];
 				gl = tdl.webgl.setupWebGL(canvas);
 
 				window.onresize = scaleViewport;
 
-				document.addEventListener( 'mousewheel', wheelzoom, false );
-				document.addEventListener( 'mousemove', focusmouse, false );
+				$('#canvas').bind( 'mousewheel', wheelzoom);
+				$('#canvas').bind( 'mousemove', focusmouse);
+				//document.addEventListener( 'mousedown', focusmouse, false );
+				//document.addEventListener( 'mouseup', focusmouse, false );
 
 				scaleViewport();
 
@@ -229,6 +243,7 @@
 				var uniforms = {
 					projection: projection,
 					resolution: resolution,
+					mouse_coord: mouse_coord,
 					world: world
 				};
 
@@ -262,8 +277,8 @@
 					uniforms.backbuffer = backBuffer.texture;
 					uniforms.frontbuffer = frontBuffer.texture;
 
-					tdl.fast.matrix4.scaling(world, [zoom, zoom, zoom]);
-					tdl.fast.matrix4.translate(world, focus);
+					tdl.fast.matrix4.translation(world, focus);
+					tdl.fast.matrix4.scale(world, [zoom, zoom, zoom]);
 					
 					//draw new frontbuffer
 					frontBuffer.bind();
