@@ -46,9 +46,8 @@ function loadRandomness(buffer) {
 
 	buffer.bind();
 	seed = new Float32Array([Math.random(), Math.random(), Math.random()]);
-	world = projection = tdl.fast.identity4(new Float32Array(16));
 	randomModel.drawPrep();
-	randomModel.draw({world: world, projection: projection, seed: seed});
+	randomModel.draw({seed: seed});
 	buffer.unbind();
 }
 
@@ -115,7 +114,7 @@ function init() {
 		{
 			life: { vert: 'glsl/identity.vert', frag: 'glsl/life.frag' },
 			screen: { vert: 'glsl/wvp.vert', frag: 'glsl/tex2frag.frag' },
-			random: { vert: 'glsl/wvp.vert', frag: 'glsl/random.frag' } 
+			random: { vert: 'glsl/identity.vert', frag: 'glsl/random.frag' } 
 		}, 
 		start
 	)
