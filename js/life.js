@@ -1,18 +1,15 @@
-tdl.require('tdl.buffers');
 tdl.require('tdl.framebuffers');
 tdl.require('tdl.fast');
 tdl.require('tdl.clock');
-tdl.require('tdl.log');
-tdl.require('tdl.math');
-tdl.require('tdl.misc');
 tdl.require('tdl.models');
-tdl.require('tdl.primitives');
 tdl.require('tdl.programs');
-tdl.require('tdl.textures');
 tdl.require('tdl.webgl');
 
 window.onload = init;
 
+/*
+ * Init global vars
+ */
 var gl, model, frontBuffer, backBuffer, programs, status, clock;
 
 var quality = 1.0;
@@ -36,14 +33,12 @@ var uniforms = {
 	world: world
 };
 
-
-
+/*
+ * Function to load random noise
+ */
 function loadRandomness(buffer) {
-
 	sq= square();
-
 	randomModel = new tdl.models.Model(programs.random, sq, null);
-
 	buffer.bind();
 	seed = new Float32Array([Math.random(), Math.random(), Math.random()]);
 	randomModel.drawPrep();
@@ -51,7 +46,9 @@ function loadRandomness(buffer) {
 	buffer.unbind();
 }
 
-
+/*
+ * Calculate the zoom
+ */
 function wheelzoom(jq_event) {
 	evt = jq_event.originalEvent;
 	zoom += zoom * evt.wheelDelta / 1000.0;
@@ -59,6 +56,9 @@ function wheelzoom(jq_event) {
 	focusmouse(jq_event);
 }
 
+/*
+ * Track with the mouse
+ */
 function focusmouse(jq_event) {
 	evt = jq_event.originalEvent;
 	mouse_coord[0] = ( evt.clientX / window.innerWidth ) * 2 - 1;
@@ -67,17 +67,9 @@ function focusmouse(jq_event) {
 	focus[1] = -mouse_coord[1] * (zoom-1);
 }
 
-function start(loaded) {
-	programs = loaded;
-	sq= square();
-	lifeModel = new tdl.models.Model(programs.life, sq, null);
-	screenModel = new tdl.models.Model(programs.screen, sq, null);
-
-	loadRandomness(backBuffer);
-	render();
-	return true;
-}
-
+/*
+ * Initialize gl and set up buffers
+ */
 function init() {
 	canvas = $("#canvas")[0];
 	gl = tdl.webgl.setupWebGL(canvas);
@@ -98,18 +90,19 @@ function init() {
 	// Setup Buffers
 	frontBuffer = new tdl.framebuffers.Framebuffer(width,height);
 	frontBuffer.texture.setParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	//frontBuffer.texture.setParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	frontBuffer.texture.setParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	frontBuffer.texture.setParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
 	frontBuffer.texture.setParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
 	backBuffer = new tdl.framebuffers.Framebuffer(width,height);
 	backBuffer.texture.setParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	//backBuffer.texture.setParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	backBuffer.texture.setParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	backBuffer.texture.setParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
 	backBuffer.texture.setParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
 
 	//set up projection matrix
 	tdl.fast.matrix4.ortho(projection, -1, 1, -1, 1, 0, -1);
 	
+	// Load the programs.
 	AJAXProgramLoader(
 		{
 			life: { vert: 'glsl/identity.vert', frag: 'glsl/life.frag' },
@@ -121,6 +114,23 @@ function init() {
 
 }
 
+/*
+ * After the programs are loaded, start rendering
+ */
+function start(loaded) {
+	programs = loaded;
+	sq= square();
+	lifeModel = new tdl.models.Model(programs.life, sq, null);
+	screenModel = new tdl.models.Model(programs.screen, sq, null);
+
+	loadRandomness(backBuffer);
+	render();
+	return true;
+}
+
+/*
+ * Main render loop
+ */
 function render() {
 	tdl.webgl.requestAnimationFrame(render, canvas);
 
@@ -157,5 +167,4 @@ function render() {
 	frontBuffer = tmp;
 
 	stats.update();
-
 }

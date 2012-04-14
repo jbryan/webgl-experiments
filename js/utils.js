@@ -1,5 +1,6 @@
 
 tdl.require('tdl.programs');
+tdl.require('tdl.primitives');
 
 function AJAXProgramLoader(programs, success_cb, error_cb) {
 	loader = this;

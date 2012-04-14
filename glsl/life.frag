@@ -25,7 +25,8 @@ void main(void)
 	vec4 cellState = texture2D(backbuffer, coord);
 
 	if (mouse_down) {
-		if (distance((mouse_coord + 1.0) / 2.0, coord) < 0.01) {
+		vec2 dist = abs((mouse_coord + 1.0) / 2.0 - coord);
+		if (max(dist.x, dist.y) < 0.01) {
 			gl_FragColor = vec4(1.0,1.0,1.0,1.0);
 		} else {
 			gl_FragColor = cellState;

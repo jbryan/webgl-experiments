@@ -17,6 +17,5 @@ void main(void)
 	float noize_r = rand(coord + seed[0]);
 	float noize_g = rand(coord + seed[1]);
 	float noize_b = rand(coord + seed[2]);
-	float dist = distance(coord, vec2(0.5,0.5));
-	gl_FragColor = step( 0.2-dist,vec4(noize_r, noize_g, noize_b, 1.0));
+	gl_FragColor = vec4(noize_r, noize_g, noize_b, 1.0);
 }
