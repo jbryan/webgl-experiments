@@ -1,0 +1,23 @@
+body {
+	color: #ffffff;
+	background-color: #000000;
+	margin: 0px;
+	overflow: hidden; font-family:Monospace;
+	font-size:13px;
+	text-align:center;
+	font-weight: bold;
+	text-align:center;
+}
+
+a {
+	color:#0078ff;
+}
+ul.contents {
+	list-style: none;
+	padding-left: 0px;
+}
+
+ul.contents li {
+}
+			
+
