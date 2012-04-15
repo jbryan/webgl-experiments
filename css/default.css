@@ -19,5 +19,18 @@ ul.contents {
 
 ul.contents li {
 }
+
+div.message_box {
+	left: 0%;
+	right: 0%;
+	top: 5%;
+	z-index: 100;
+	position: fixed;
+}
+div.message_box span {
+	background-color: #000000;
+	padding: 1em 1em 1em 1em;
+	opacity: 0.6;
+}
 			
 
