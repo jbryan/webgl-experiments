@@ -10,11 +10,11 @@ window.onload = init;
 /*
  * Init global vars
  */
-var gl, model, frontBuffer, backBuffer, programs, status, clock;
+var gl, model, lifeBuffer, backBuffer, programs, status, clock;
 
 var quality = 1.0;
-var width = 4096;
-var height = 2048;
+var width = 2048;
+var height = 1024;
 var zoom = 1.0;
 var focus = [0,0,0];
 var mouse_coord = [0,0];
@@ -40,7 +40,7 @@ function loadRandomness(buffer) {
 	sq= square();
 	randomModel = new tdl.models.Model(programs.random, sq, null);
 	buffer.bind();
-	seed = new Float32Array([Math.random(), Math.random(), Math.random()]);
+	seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
 	randomModel.drawPrep();
 	randomModel.draw({seed: seed});
 	buffer.unbind();
@@ -74,30 +74,25 @@ function init() {
 	canvas = $("#canvas")[0];
 	gl = tdl.webgl.setupWebGL(canvas);
 
-	window.onresize = function() { scaleViewport(canvas, gl); };
+	window.onresize = function() { scaleViewport(canvas, gl, quality); };
 
 	$('#canvas').bind( 'mousewheel', wheelzoom);
 	$('#canvas').bind( 'mousemove', focusmouse);
 	$('#canvas').bind( 'mousedown', function(evt) { mouse_down = true; } );
 	$('#canvas').bind( 'mouseup', function(evt) { mouse_down = false; } );
 
-	scaleViewport(canvas, gl);
+	scaleViewport(canvas, gl, quality);
 
 	stats = setUpStats();
 	clock = tdl.clock.createClock();
 
 
 	// Setup Buffers
-	frontBuffer = new tdl.framebuffers.Framebuffer(width,height);
-	frontBuffer.texture.setParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	frontBuffer.texture.setParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	frontBuffer.texture.setParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
-	frontBuffer.texture.setParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
-	backBuffer = new tdl.framebuffers.Framebuffer(width,height);
-	backBuffer.texture.setParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	backBuffer.texture.setParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	backBuffer.texture.setParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
-	backBuffer.texture.setParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
+	lifeBuffer = new DoubleBuffer(width,height);
+	lifeBuffer.setTexParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	lifeBuffer.setTexParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	lifeBuffer.setTexParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
+	lifeBuffer.setTexParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
 
 	//set up projection matrix
 	tdl.fast.matrix4.ortho(projection, -1, 1, -1, 1, 0, -1);
@@ -123,8 +118,10 @@ function start(loaded) {
 	lifeModel = new tdl.models.Model(programs.life, sq, null);
 	screenModel = new tdl.models.Model(programs.screen, sq, null);
 
-	loadRandomness(backBuffer);
-	render();
+	loadRandomness(lifeBuffer);
+	lifeBuffer.swap();
+	
+	tdl.webgl.requestAnimationFrame(render, canvas);
 	return true;
 }
 
@@ -144,27 +141,25 @@ function render() {
 	gl.enable(gl.DEPTH_TEST);
 
 	//compute new uniforms
-	uniforms.backbuffer = backBuffer.texture;
-	uniforms.frontbuffer = frontBuffer.texture;
+	uniforms.frontbuffer = lifeBuffer.texture;
 	uniforms.mouse_down = mouse_down;
 
 	tdl.fast.matrix4.translation(world, focus);
 	tdl.fast.matrix4.scale(world, [zoom, zoom, zoom]);
 	
 	//draw new frontbuffer
-	frontBuffer.bind();
+	lifeBuffer.bind();
 	lifeModel.drawPrep();
 	lifeModel.draw(uniforms);
-	frontBuffer.unbind();
+	lifeBuffer.unbind();
+	//swap buffers
+	lifeBuffer.swap()
 
 	//draw the frontbuffer to the screen
+	uniforms.frontbuffer = lifeBuffer.texture;
 	screenModel.drawPrep();
 	screenModel.draw(uniforms);
 
-	//swap buffers
-	tmp = backBuffer;
-	backBuffer = frontBuffer;
-	frontBuffer = tmp;
 
 	stats.update();
 }

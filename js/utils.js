@@ -1,6 +1,7 @@
 
 tdl.require('tdl.programs');
 tdl.require('tdl.primitives');
+tdl.require('tdl.framebuffers');
 
 function AJAXProgramLoader(programs, success_cb, error_cb) {
 	loader = this;
@@ -24,7 +25,7 @@ function AJAXProgramLoader(programs, success_cb, error_cb) {
 			loader.loaded = true;
 			loader.success_cb(loader.programs);
 		} catch (err) {
-			loader.error_cb(err)
+			loader.error_cb(err);
 		}
 	})
 	
@@ -47,7 +48,9 @@ function AJAXProgramLoader(programs, success_cb, error_cb) {
 }
 
 
-function scaleViewport(canvas, gl) {
+function scaleViewport(canvas, gl, quality) {
+	if (quality === undefined)
+		quality = 1.0;
 	canvas.width = window.innerWidth * quality;
 	canvas.height = window.innerHeight * quality;
 	console.log("Resized to: " + canvas.width + "x" + canvas.height);
@@ -86,4 +89,41 @@ function square() {
 		position: positions,
 		indices: indices
 	}
+}
+
+
+function DoubleBuffer(width, height, float32) {
+	if ( float32 ) {
+		this.frontBuffer = new tdl.framebuffers.Float32Framebuffer(width,height);
+		this.backBuffer = new tdl.framebuffers.Float32Framebuffer(width,height);
+	} else {
+		this.frontBuffer = new tdl.framebuffers.Framebuffer(width,height);
+		this.backBuffer = new tdl.framebuffers.Framebuffer(width,height);
+	}
+	console.log("Creating Double Buffer");
+}
+
+DoubleBuffer.prototype = {
+	get texture() {
+		return this.frontBuffer.texture;
+	}
+}
+
+DoubleBuffer.prototype.setTexParameter = function(type, value) {
+	this.frontBuffer.texture.setParameter(type, value);
+	this.backBuffer.texture.setParameter(type, value);
+}
+
+DoubleBuffer.prototype.bind = function() {
+	this.backBuffer.bind();
+}
+
+DoubleBuffer.prototype.unbind = function() {
+	this.backBuffer.unbind();
+}
+
+DoubleBuffer.prototype.swap = function() {
+	var temp = this.backBuffer;
+	this.backBuffer = this.frontBuffer;
+	this.frontBuffer = temp;
 }

@@ -6,23 +6,23 @@ precision highp float;
 #endif
 varying vec2 coord;
 uniform vec2 resolution;
-uniform sampler2D backbuffer;
+uniform sampler2D frontbuffer;
 uniform bool mouse_down;
 uniform vec2 mouse_coord;
 
 void main(void)
 {   
 	vec4 sumNeighbors = vec4(0.0,0.0,0.0,0.0);
-	sumNeighbors += texture2D(backbuffer, coord + vec2(-1.0,-1.0)/resolution);
-	sumNeighbors += texture2D(backbuffer, coord + vec2(-1.0, 0.0)/resolution);
-	sumNeighbors += texture2D(backbuffer, coord + vec2(-1.0, 1.0)/resolution);
-	sumNeighbors += texture2D(backbuffer, coord + vec2( 0.0,-1.0)/resolution);
-	sumNeighbors += texture2D(backbuffer, coord + vec2( 0.0, 1.0)/resolution);
-	sumNeighbors += texture2D(backbuffer, coord + vec2( 1.0,-1.0)/resolution);
-	sumNeighbors += texture2D(backbuffer, coord + vec2( 1.0, 0.0)/resolution);
-	sumNeighbors += texture2D(backbuffer, coord + vec2( 1.0, 1.0)/resolution);
+	sumNeighbors += texture2D(frontbuffer, coord + vec2(-1.0,-1.0)/resolution);
+	sumNeighbors += texture2D(frontbuffer, coord + vec2(-1.0, 0.0)/resolution);
+	sumNeighbors += texture2D(frontbuffer, coord + vec2(-1.0, 1.0)/resolution);
+	sumNeighbors += texture2D(frontbuffer, coord + vec2( 0.0,-1.0)/resolution);
+	sumNeighbors += texture2D(frontbuffer, coord + vec2( 0.0, 1.0)/resolution);
+	sumNeighbors += texture2D(frontbuffer, coord + vec2( 1.0,-1.0)/resolution);
+	sumNeighbors += texture2D(frontbuffer, coord + vec2( 1.0, 0.0)/resolution);
+	sumNeighbors += texture2D(frontbuffer, coord + vec2( 1.0, 1.0)/resolution);
 
-	vec4 cellState = texture2D(backbuffer, coord);
+	vec4 cellState = texture2D(frontbuffer, coord);
 
 	if (mouse_down) {
 		vec2 dist = abs((mouse_coord + 1.0) / 2.0 - coord);

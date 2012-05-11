@@ -119,7 +119,7 @@ tdl.framebuffers.Framebuffer.prototype.recoverFromLostContext = function() {
     gl.renderbufferStorage(
         gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-  }
+  } 
 
   var fb = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
