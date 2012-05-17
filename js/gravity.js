@@ -13,13 +13,12 @@ window.onload = init;
 var NUM_PARTICLES_X = 128;
 var NUM_PARTICLES_Y = 128;
 var NUM_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y;
-//var NUM_PARTICLES = 16;
 var width = 512;
 var height = 512;
 var zoom = 1.0;
 var focus = [0,0,0];
 
-var gl, model, particleBuffer, programs, status, clock, screenModel, gravityModel;
+var gl, model, positionBuffer, velocityBuffer, colorBuffer, programs, status, clock, screenModel, positionModel, velocityModel;
 
 
 var projection = new Float32Array(16);
@@ -29,20 +28,6 @@ var eyePosition = new Float32Array(3);
 var resolution = new Float32Array([width, height]);
 
 var uniforms = {};
-
-/*
- * Function to load random noise
- */
-function loadRandomness(buffer) {
-	sq= square();
-	randomModel = new tdl.models.Model(programs.random, sq, null);
-	buffer.bind();
-	seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
-	randomModel.drawPrep();
-	randomModel.draw({seed: seed});
-	buffer.unbind();
-}
-
 
 
 /*
@@ -61,11 +46,23 @@ function init() {
 
 
 	// Setup Buffers
-	particleBuffer = new DoubleBuffer(NUM_PARTICLES_X, NUM_PARTICLES_Y, true);
-	particleBuffer.setTexParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
-	particleBuffer.setTexParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
-	particleBuffer.setTexParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	particleBuffer.setTexParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	positionBuffer = new DoubleBuffer(NUM_PARTICLES_X, NUM_PARTICLES_Y, true);
+	positionBuffer.setTexParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
+	positionBuffer.setTexParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
+	positionBuffer.setTexParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	positionBuffer.setTexParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+	velocityBuffer = new DoubleBuffer(NUM_PARTICLES_X, NUM_PARTICLES_Y, true);
+	velocityBuffer.setTexParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
+	velocityBuffer.setTexParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
+	velocityBuffer.setTexParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	velocityBuffer.setTexParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+	colorBuffer = new DoubleBuffer(NUM_PARTICLES_X, NUM_PARTICLES_Y, true);
+	colorBuffer.setTexParameter(gl.TEXTURE_WRAP_S, gl.REPEAT);
+	colorBuffer.setTexParameter(gl.TEXTURE_WRAP_T, gl.REPEAT);
+	colorBuffer.setTexParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	colorBuffer.setTexParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
 	//set up projection matrix
 	tdl.fast.matrix4.ortho(projection, -1, 1, -1, 1, 0, -1);
@@ -74,9 +71,11 @@ function init() {
 	AJAXProgramLoader(
 		{
 			screen: { vert: 'glsl/particles.vert', frag: 'glsl/particles.frag' },
-			//screen: { vert: 'glsl/wvp.vert', frag: 'glsl/tex2frag.frag' },
-			gravity: { vert: 'glsl/identity.vert', frag: 'glsl/gravity.frag' },
-			random: { vert: 'glsl/identity.vert', frag: 'glsl/random.frag' } 
+			gravity_pos: { vert: 'glsl/identity.vert', frag: 'glsl/gravity_pos.frag' },
+			gravity_vel: { vert: 'glsl/identity.vert', frag: 'glsl/gravity_vel.frag' },
+			init_vel: { vert: 'glsl/identity.vert', frag: 'glsl/init_vel.frag' },
+			init_pos: { vert: 'glsl/identity.vert', frag: 'glsl/init_pos.frag' },
+			init_color: { vert: 'glsl/identity.vert', frag: 'glsl/init_color.frag' }
 		}, 
 		start
 	)
@@ -104,13 +103,35 @@ function start(loaded) {
 	sq= square();
 	p = initParticles();
 
-	screenModel = new tdl.models.Model(programs.screen, p, null, gl.POINTS);
-	//screenModel = new tdl.models.Model(programs.screen, sq, null);
-	gravityModel = new tdl.models.Model(programs.gravity, sq, null);
+	seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
+	initPosModel = new tdl.models.Model(programs.init_pos, sq, null);
+	positionBuffer.bind();
+	initPosModel.drawPrep();
+	initPosModel.draw({seed: seed});
+	positionBuffer.unbind();
+	positionBuffer.swap();
 
-	loadRandomness(particleBuffer);
-	particleBuffer.swap();
-	loadRandomness(particleBuffer);
+	seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
+	initVelModel = new tdl.models.Model(programs.init_vel, sq, null);
+	velocityBuffer.bind();
+	initVelModel.drawPrep();
+	initVelModel.draw({seed: seed});
+	velocityBuffer.unbind();
+	velocityBuffer.swap();
+
+	uniforms.position_data = positionBuffer.texture;
+	uniforms.velocity_data = velocityBuffer.texture;
+	initColorModel = new tdl.models.Model(programs.init_color, sq, null);
+	colorBuffer.bind();
+	initColorModel.drawPrep();
+	initColorModel.draw(uniforms);
+	colorBuffer.unbind();
+	colorBuffer.swap();
+
+	positionModel = new tdl.models.Model(programs.gravity_pos, sq, null);
+	velocityModel = new tdl.models.Model(programs.gravity_vel, sq, null);
+	screenModel = new tdl.models.Model(programs.screen, p, null, gl.POINTS);
+
 
 	tdl.webgl.requestAnimationFrame(render, canvas);
 	return true;
@@ -128,15 +149,27 @@ function render() {
 	gl.clearDepth(1);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
+	uniforms.position_data = positionBuffer.texture;
+	uniforms.velocity_data = velocityBuffer.texture;
+	uniforms.color_data = colorBuffer.texture;
 
-	particleBuffer.bind();
-	gravityModel.drawPrep();
-	gravityModel.draw({particle_data: particleBuffer.texture});
-	particleBuffer.unbind();
-	particleBuffer.swap();
+	positionBuffer.bind();
+	positionModel.drawPrep();
+	positionModel.draw(uniforms);
+	positionBuffer.unbind();
+
+	velocityBuffer.bind();
+	velocityModel.drawPrep();
+	velocityModel.draw(uniforms);
+	velocityBuffer.unbind();
+
+	velocityBuffer.swap();
+	positionBuffer.swap();
+	uniforms.position_data = positionBuffer.texture;
+	uniforms.velocity_data = velocityBuffer.texture;
+	uniforms.color_data = colorBuffer.texture;
 
 	//compute new uniforms
-	uniforms.particle_data = particleBuffer.texture;
 	tdl.fast.matrix4.translation(world, focus);
 	tdl.fast.matrix4.scale(world, [zoom, zoom, zoom]);
 	uniforms.world = world;
