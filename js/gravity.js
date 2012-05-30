@@ -16,6 +16,7 @@ var NUM_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y;
 var width = 512;
 var height = 512;
 var zoom = 1.0;
+//var zoom = 0.1;
 var focus = [0,0,0];
 
 var gl, model, positionBuffer, velocityBuffer, colorBuffer, programs, status, clock, screenModel, positionModel, velocityModel;
@@ -66,6 +67,7 @@ function init() {
 
 	//set up projection matrix
 	tdl.fast.matrix4.ortho(projection, -1, 1, -1, 1, 0, -1);
+	//tdl.fast.matrix4.perspective(projection, Math.PI/2.0, 1.0, 0, -10);
 	
 	// Load the programs.
 	AJAXProgramLoader(
@@ -103,19 +105,20 @@ function start(loaded) {
 	sq= square();
 	p = initParticles();
 
-	seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
+	uniforms.seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
 	initPosModel = new tdl.models.Model(programs.init_pos, sq, null);
 	positionBuffer.bind();
 	initPosModel.drawPrep();
-	initPosModel.draw({seed: seed});
+	initPosModel.draw(uniforms);
 	positionBuffer.unbind();
 	positionBuffer.swap();
 
-	seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
+	uniforms.position_data = positionBuffer.texture;
+	uniforms.seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
 	initVelModel = new tdl.models.Model(programs.init_vel, sq, null);
 	velocityBuffer.bind();
 	initVelModel.drawPrep();
-	initVelModel.draw({seed: seed});
+	initVelModel.draw(uniforms);
 	velocityBuffer.unbind();
 	velocityBuffer.swap();
 
