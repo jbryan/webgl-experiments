@@ -10,18 +10,19 @@ window.onload = init;
 /*
  * Init global vars
  */
-var NUM_PARTICLES_X = 128;
-var NUM_PARTICLES_Y = 128;
+var NUM_PARTICLES_X = 64;
+var NUM_PARTICLES_Y = 64;
 var NUM_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y;
 var width = 512;
 var height = 512;
 var zoom = 1.0;
-//var zoom = 0.1;
+//var zoom = 0.125;
 var focus = [0,0,0];
 
 var gl, model, positionBuffer, velocityBuffer, colorBuffer, programs, status, clock, screenModel, positionModel, velocityModel;
 
 
+var wvp = new Float32Array(16);
 var projection = new Float32Array(16);
 var view = new Float32Array(16);
 var world = new Float32Array(16);
@@ -66,8 +67,8 @@ function init() {
 	colorBuffer.setTexParameter(gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
 	//set up projection matrix
-	tdl.fast.matrix4.ortho(projection, -1, 1, -1, 1, 0, -1);
-	//tdl.fast.matrix4.perspective(projection, Math.PI/2.0, 1.0, 0, -10);
+	//tdl.fast.matrix4.ortho(projection, -1, 1, -1, 1, 0, -1);
+	tdl.fast.matrix4.perspective(projection, Math.PI/3.0, canvas.width/canvas.height, 1, 50);
 	
 	// Load the programs.
 	AJAXProgramLoader(
@@ -140,6 +141,7 @@ function start(loaded) {
 	return true;
 }
 
+var theta = 0.0;
 /*
  * Main render loop
  */
@@ -173,9 +175,19 @@ function render() {
 	uniforms.color_data = colorBuffer.texture;
 
 	//compute new uniforms
-	tdl.fast.matrix4.translation(world, focus);
-	tdl.fast.matrix4.scale(world, [zoom, zoom, zoom]);
+	tdl.fast.matrix4.scaling(world, [zoom, zoom, zoom]);
+	tdl.fast.matrix4.translate(world, focus);
+	//tdl.fast.matrix4hjk
+	//tdl.fast.identity4(world);
+	tdl.fast.matrix4.lookAt(view, [Math.sin(theta) * 4,0,Math.cos(theta) * 4], [0,0,0], [0,1,0])
+	theta += 0.001;
+
+	tdl.fast.matrix4.mul(wvp, view, projection);
+	tdl.fast.matrix4.mul(wvp, world, wvp);
+
+	uniforms.wvp = wvp
 	uniforms.world = world;
+	uniforms.view = view;
 	uniforms.projection = projection;
 	
 

@@ -18,6 +18,7 @@ void main(void)
 	float noize_g = rand(coord + seed[1]);
 	float noize_b = rand(coord + seed[2]);
 	gl_FragColor.xyz = vec3(noize_r, noize_g, noize_b) * 2.0 - 1.0;
+	/*gl_FragColor.xyz = vec3(coord, noize_b) * 2.0 - 1.0;*/
 	/*gl_FragColor.z = 0.0;*/
 	gl_FragColor.w = 1.0;
 }
