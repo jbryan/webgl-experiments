@@ -1,10 +1,8 @@
 /* 
 vim:ft=glsl 
 */
-uniform mat4 world;
-uniform mat4 view;
-uniform mat4 projection;
 uniform mat4 wvp;
+uniform vec3 eye_position;
 attribute vec4 position;
 uniform sampler2D velocity_data;
 uniform sampler2D position_data;
@@ -19,6 +17,6 @@ void main()
 
 	/*gl_Position = (world * (view * projection)) * pos;*/
 	gl_Position = wvp * pos;
-	gl_PointSize = clamp(1.0/gl_Position.z,3.0, 500.0);
+	gl_PointSize = 20.0/distance(pos.xyz, eye_position);
 	/*gl_PointSize = 3.0;*/
 }

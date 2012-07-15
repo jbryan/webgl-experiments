@@ -10,11 +10,9 @@ window.onload = init;
 /*
  * Init global vars
  */
-var NUM_PARTICLES_X = 64;
-var NUM_PARTICLES_Y = 64;
+var NUM_PARTICLES_X = 128;
+var NUM_PARTICLES_Y = 128;
 var NUM_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y;
-var width = 512;
-var height = 512;
 var zoom = 1.0;
 //var zoom = 0.125;
 var focus = [0,0,0];
@@ -27,7 +25,6 @@ var projection = new Float32Array(16);
 var view = new Float32Array(16);
 var world = new Float32Array(16);
 var eyePosition = new Float32Array(3);
-var resolution = new Float32Array([width, height]);
 
 var uniforms = {};
 
@@ -68,7 +65,7 @@ function init() {
 
 	//set up projection matrix
 	//tdl.fast.matrix4.ortho(projection, -1, 1, -1, 1, 0, -1);
-	tdl.fast.matrix4.perspective(projection, Math.PI/3.0, canvas.width/canvas.height, 1, 50);
+	tdl.fast.matrix4.perspective(projection, Math.PI/3.0, canvas.width/canvas.height, 0, 50);
 	
 	// Load the programs.
 	AJAXProgramLoader(
@@ -76,8 +73,6 @@ function init() {
 			screen: { vert: 'glsl/particles.vert', frag: 'glsl/particles.frag' },
 			gravity_pos: { vert: 'glsl/identity.vert', frag: 'glsl/gravity_pos.frag' },
 			gravity_vel: { vert: 'glsl/identity.vert', frag: 'glsl/gravity_vel.frag' },
-			init_vel: { vert: 'glsl/identity.vert', frag: 'glsl/init_vel.frag' },
-			init_pos: { vert: 'glsl/identity.vert', frag: 'glsl/init_pos.frag' },
 			init_color: { vert: 'glsl/identity.vert', frag: 'glsl/init_color.frag' }
 		}, 
 		start
@@ -106,32 +101,7 @@ function start(loaded) {
 	sq= square();
 	p = initParticles();
 
-	uniforms.seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
-	initPosModel = new tdl.models.Model(programs.init_pos, sq, null);
-	positionBuffer.bind();
-	initPosModel.drawPrep();
-	initPosModel.draw(uniforms);
-	positionBuffer.unbind();
-	positionBuffer.swap();
-
-	uniforms.position_data = positionBuffer.texture;
-	uniforms.seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
-	initVelModel = new tdl.models.Model(programs.init_vel, sq, null);
-	velocityBuffer.bind();
-	initVelModel.drawPrep();
-	initVelModel.draw(uniforms);
-	velocityBuffer.unbind();
-	velocityBuffer.swap();
-
-	uniforms.position_data = positionBuffer.texture;
-	uniforms.velocity_data = velocityBuffer.texture;
-	initColorModel = new tdl.models.Model(programs.init_color, sq, null);
-	colorBuffer.bind();
-	initColorModel.drawPrep();
-	initColorModel.draw(uniforms);
-	colorBuffer.unbind();
-	colorBuffer.swap();
-
+	colorModel = new tdl.models.Model(programs.init_color, sq, null);
 	positionModel = new tdl.models.Model(programs.gravity_pos, sq, null);
 	velocityModel = new tdl.models.Model(programs.gravity_vel, sq, null);
 	screenModel = new tdl.models.Model(programs.screen, p, null, gl.POINTS);
@@ -154,9 +124,16 @@ function render() {
 	gl.clearDepth(1);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
+	theta += 0.001;
+	eyePosition[0] = Math.sin(theta) * 4.0;
+	eyePosition[1] = 0;
+	eyePosition[2] = Math.cos(theta) * 4.0;
+
 	uniforms.position_data = positionBuffer.texture;
 	uniforms.velocity_data = velocityBuffer.texture;
 	uniforms.color_data = colorBuffer.texture;
+	uniforms.seed = new Float32Array([Math.random(), Math.random(), Math.random(), Math.random()]);
+	uniforms.eye_position = eyePosition;
 
 	positionBuffer.bind();
 	positionModel.drawPrep();
@@ -168,8 +145,14 @@ function render() {
 	velocityModel.draw(uniforms);
 	velocityBuffer.unbind();
 
-	velocityBuffer.swap();
+	colorBuffer.bind();
+	colorModel.drawPrep();
+	colorModel.draw(uniforms);
+	colorBuffer.unbind();
+
 	positionBuffer.swap();
+	velocityBuffer.swap();
+	colorBuffer.swap();
 	uniforms.position_data = positionBuffer.texture;
 	uniforms.velocity_data = velocityBuffer.texture;
 	uniforms.color_data = colorBuffer.texture;
@@ -177,10 +160,7 @@ function render() {
 	//compute new uniforms
 	tdl.fast.matrix4.scaling(world, [zoom, zoom, zoom]);
 	tdl.fast.matrix4.translate(world, focus);
-	//tdl.fast.matrix4hjk
-	//tdl.fast.identity4(world);
-	tdl.fast.matrix4.lookAt(view, [Math.sin(theta) * 4,0,Math.cos(theta) * 4], [0,0,0], [0,1,0])
-	theta += 0.001;
+	tdl.fast.matrix4.lookAt(view, eyePosition, [0,0,0], [0,1,0])
 
 	tdl.fast.matrix4.mul(wvp, view, projection);
 	tdl.fast.matrix4.mul(wvp, world, wvp);
@@ -189,9 +169,8 @@ function render() {
 	uniforms.world = world;
 	uniforms.view = view;
 	uniforms.projection = projection;
-	
 
-  gl.enable(gl.BLEND);
+	gl.enable(gl.BLEND);
 	gl.enable(gl.CULL_FACE);
 	//gl.enable(gl.DEPTH_TEST);
 	gl.blendEquation(gl.FUNC_ADD);
