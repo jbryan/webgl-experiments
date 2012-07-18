@@ -26,8 +26,9 @@ void main(void)
 
 	if (length(pos) < DIA) {
 		float dir = rand(coord + seed[1]) * 2.0 * PI;
+    float mag = rand(coord + seed[2]) * 0.003;
 		vec3 rand = vec3(0.0, cos(dir), sin(dir)) ;
-		gl_FragColor.xyz = rand * 0.003;
+		gl_FragColor.xyz = rand * mag;
 		gl_FragColor.w = 1.0;
 		return;
 	}
