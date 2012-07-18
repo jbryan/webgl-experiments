@@ -9,7 +9,10 @@ uniform vec4 seed;
 uniform sampler2D velocity_data;
 uniform sampler2D position_data;
 
-float gravity = 0.0000008;
+#define DIA 0.3
+#define PI 3.14159265
+
+float gravity = 0.000008;
 
 float rand(vec2 co){
 	//stolen from http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
@@ -21,11 +24,10 @@ void main(void)
 	vec3 vel = texture2D(velocity_data, coord).xyz;
 	vec3 pos = texture2D(position_data, coord).xyz;
 
-	if (length(pos) < 0.1) {
-		float noize_g = rand(coord + seed[1]);
-		float noize_b = rand(coord + seed[2]);
-		vec3 rand = vec3(0.0, noize_g, noize_b) * 2.0 - 1.0;
-		gl_FragColor.xyz = rand * 0.001;
+	if (length(pos) < DIA) {
+		float dir = rand(coord + seed[1]) * 2.0 * PI;
+		vec3 rand = vec3(0.0, cos(dir), sin(dir)) ;
+		gl_FragColor.xyz = rand * 0.003;
 		gl_FragColor.w = 1.0;
 		return;
 	}

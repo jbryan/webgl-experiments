@@ -13,6 +13,7 @@ window.onload = init;
 var NUM_PARTICLES_X = 128;
 var NUM_PARTICLES_Y = 128;
 var NUM_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y;
+var RADIUS = 3.0;
 var zoom = 1.0;
 //var zoom = 0.125;
 var focus = [0,0,0];
@@ -125,9 +126,9 @@ function render() {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
 	theta += 0.001;
-	eyePosition[0] = Math.sin(theta) * 4.0;
+	eyePosition[0] = Math.sin(theta) * RADIUS;
 	eyePosition[1] = 0;
-	eyePosition[2] = Math.cos(theta) * 4.0;
+	eyePosition[2] = Math.cos(theta) * RADIUS;
 
 	uniforms.position_data = positionBuffer.texture;
 	uniforms.velocity_data = velocityBuffer.texture;
